@@ -1,5 +1,7 @@
 package com.example.singleplayerponggame;
 
+import static java.sql.Types.NULL;
+
 import android.content.Context;
 import android.graphics.Canvas;
 import android.graphics.Color;
@@ -16,6 +18,8 @@ import android.widget.TextView;
 
 public class BallView extends View implements  SensorEventListener {
 
+    private float[] gravity = new float[3];
+    private float[] linearAcceleration = new float[3];
     private SensorManager sensorManager;
     private RectF raacket;
     private Paint paint = new Paint();
@@ -28,10 +32,13 @@ public class BallView extends View implements  SensorEventListener {
     private float discWidth = -10f;
     private float discHeight = 15f;
     private float currentYaw = 0f; // Current angle around the z-axis (yaw)
+
+    private  float dxDisc = 0;
     private TextView textView;
     private float centerX,centerY;
     private  float rotationZ;
     private float rocketAngle;
+    private float xAcceleration;
     public BallView(Context context, AttributeSet attrs) {
         super(context, attrs);
 
@@ -97,6 +104,16 @@ public class BallView extends View implements  SensorEventListener {
         // Draw the ball at the updated position
         canvas.drawCircle(x, y, 50f , paint);
         canvas.drawText(String.valueOf(rotationZ - rocketAngle), 20, 30, paint);
+        canvas.drawText(String.valueOf(xAcceleration), 20, 70, paint);
+        if(discX + dxDisc > getWidth() - 1 || discX + dxDisc < -discWidth)
+        {
+            centerX += 0;
+            discX += 0;
+        }
+        else {
+            centerX += dxDisc;
+            discX += dxDisc;
+        }
         canvas.rotate(rocketAngle-rotationZ, centerX, centerY);
         canvas.drawRect(discX, discY,discX + discWidth , discHeight + discY, paint);
         paint.setTextSize(30);
@@ -113,6 +130,31 @@ public class BallView extends View implements  SensorEventListener {
 
     @Override
     public void onSensorChanged(SensorEvent event) {
+        if (event.sensor.getType() != NULL) {
+            // Apply high-pass filter to remove gravity component
+            gravity[0] = 1f * gravity[0] + (1 - 1f) * event.values[0];
+            gravity[1] = 1f * gravity[1] + (1 - 1f) * event.values[1];
+            gravity[2] = 1f * gravity[2] + (1 - 1f) * event.values[2];
+
+            linearAcceleration[0] = event.values[0] - gravity[0];
+            linearAcceleration[1] = event.values[1] - gravity[1];
+            linearAcceleration[2] = event.values[2] - gravity[2];
+
+            // Use the filtered linear acceleration values to move the ball
+            // For example:
+            xAcceleration = linearAcceleration[0];
+//                float yAcceleration = linearAcceleration[1];
+            if(-xAcceleration > 0 && -xAcceleration > 2)
+            {
+                dxDisc = 35;
+            }
+            else if (-xAcceleration < 0 && -xAcceleration < -2){
+                dxDisc = -35;
+            }
+            else {
+                dxDisc = 0;
+            }
+        }
         if (event.sensor.getType() == Sensor.TYPE_GAME_ROTATION_VECTOR) {
             float[] rotationMatrix = new float[9];
             SensorManager.getRotationMatrixFromVector(rotationMatrix, event.values);
@@ -129,11 +171,13 @@ public class BallView extends View implements  SensorEventListener {
 
     public void start() {
         // Register the SensorEventListener with the SensorManager to start receiving gyroscope sensor events
+        sensorManager.registerListener(this,sensorManager.getDefaultSensor(Sensor.TYPE_ACCELEROMETER),sensorManager.SENSOR_DELAY_UI);
         sensorManager.registerListener(this, sensorManager.getDefaultSensor(Sensor.TYPE_GAME_ROTATION_VECTOR), SensorManager.SENSOR_DELAY_GAME);
     }
 
     public void stop() {
         // Unregister the SensorEventListener when you no longer need to receive gyroscope sensor events
+        sensorManager.unregisterListener(this);
         sensorManager.unregisterListener(this);
     }
 }
