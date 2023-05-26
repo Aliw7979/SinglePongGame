@@ -21,7 +21,7 @@ public class BallView extends View implements  SensorEventListener {
     private Paint paint = new Paint();
     private float x = -10f; // X coordinate of the ball
     private float y = -10f; // Y coordinate of the ball
-    private float dx = 0f; // Change in X coordinate per frame
+    private float dx = 10f; // Change in X coordinate per frame
     private float dy = 30f; // Change in Y coordinate per frame
     private float discX = -10f;
     private float discY = -10f;
@@ -81,11 +81,21 @@ public class BallView extends View implements  SensorEventListener {
         if (y > getHeight() - 25 || y < 25) {
             dy = -dy;
         }
+        if (x + 50f >= discX && x - 50f <= discX + discWidth
+                && y + 50 >= discY && y - 50 <= discY + discHeight) {
+            // Reverse the ball's direction
+            dy = -dy;
+        }
 
+        // Check for collision with walls
+        if (x - 50f < 0 || x + 50f > getWidth()) {
+            // Reverse the ball's direction
+            dx = -dx;
+        }
         // Get the current yaw angle (in degrees) around the z-axis from the gyroscope sensor
         //textView.setText((String.valueOf(currentYawDegrees)));
         // Draw the ball at the updated position
-        canvas.drawCircle(x, y, 181f , paint);
+        canvas.drawCircle(x, y, 50f , paint);
         canvas.drawText(String.valueOf(rotationZ - rocketAngle), 20, 30, paint);
         canvas.rotate(rocketAngle-rotationZ, centerX, centerY);
         canvas.drawRect(discX, discY,discX + discWidth , discHeight + discY, paint);
