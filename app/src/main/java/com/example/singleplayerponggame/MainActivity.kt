@@ -14,14 +14,27 @@ import androidx.compose.ui.tooling.preview.Preview
 import com.example.singleplayerponggame.ui.theme.SinglePlayerPongGameTheme
 
 class MainActivity : ComponentActivity() {
+    private lateinit var ballView: BallView
+
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
-// Set the content view to the main layout
-        setContentView(R.layout.activity_main)
 
-        // Get a reference to the ball view
-        val ball = findViewById<View>(R.id.ball_view) as BallView
+        ballView = BallView(this, null)
+        setContentView(ballView)
     }
+
+    override fun onResume() {
+        super.onResume()
+
+        ballView.start()
+    }
+
+    override fun onPause() {
+        super.onPause()
+
+        ballView.stop()
+    }
+
 }
 
 
