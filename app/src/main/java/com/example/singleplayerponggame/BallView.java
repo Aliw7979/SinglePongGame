@@ -4,37 +4,49 @@ import android.content.Context;
 import android.graphics.Canvas;
 import android.graphics.Color;
 import android.graphics.Paint;
+import android.graphics.RectF;
 import android.hardware.Sensor;
 import android.hardware.SensorEvent;
 import android.hardware.SensorEventListener;
 import android.hardware.SensorManager;
 import android.util.AttributeSet;
 import android.view.View;
+import android.widget.TextView;
 
 public class BallView extends View implements SensorEventListener {
 
+    private RectF raacket;
+    private Paint paint = new Paint();
+    private float x = -10f; // X coordinate of the ball
+    private float y = -10f; // Y coordinate of the ball
+    private float dx = 10f; // Change in X coordinate per frame
+    private float dy = 30f; // Change in Y coordinate per frame
+    private float discX = -10f;
+    private float discY = -10f;
+    private float discWidth = -10f;
+    private float discHeight = 15f;
+    private float currentYaw = 0f; // Current angle around the z-axis (yaw)
+    private TextView textView;
+    private float centerX,centerY;
+    private  float rotationZ;
+    private float rocketAngle;
     private static final float ALPHA =1f;
     private float[] gravity = new float[3];
     private float[] linearAcceleration = new float[3];
     private SensorManager mSensorManager;
     private Sensor mAccelerometer;
-    private Paint paint = new Paint();
-    private float x = -10f; // X coordinate of the ball
-    private float y = -10f; // Y coordinate of the ball
-    private float dx = 0f; // Change in X coordinate per frame
-    private float dy = 30f; // Change in Y coordinate per frame
-    private float discX = -10f;
-    private float discY = -10f;
-    private float discWidth = -10f;
-    private float discHeight = 25f;
+
+    private Sensor mGyro;
 
     private float dxDisc = 0f;
     private float dyDisc = 0f;
+
 
     public BallView(Context context, AttributeSet attrs) {
         super(context, attrs);
         mSensorManager = (SensorManager) context.getSystemService(Context.SENSOR_SERVICE);
         mAccelerometer = mSensorManager.getDefaultSensor(Sensor.TYPE_LINEAR_ACCELERATION);
+        mGyro = mSensorManager.getDefaultSensor(Sensor.TYPE_GAME_ROTATION_VECTOR);
     }
 
     @Override
@@ -44,12 +56,18 @@ public class BallView extends View implements SensorEventListener {
         if (x == -10f && y == -10f) {
             x = getWidth() / 2f;
             y = getHeight() / 3f;
+            rocketAngle = rotationZ;
         }
 
         if (discX == -10f && discY == -10f) {
             discX = (getWidth() / 2f) - (1f / 6f) * getWidth();
             discY = (getHeight() / 4f) * 3;
             discWidth = getWidth() / 3f;
+            centerY = (2*discY + discHeight) / 2;
+            centerX = (2*discX + discWidth) / 2;
+        }
+        if (rocketAngle == 0) {
+            rocketAngle = rotationZ;
         }
 
 
@@ -70,7 +88,6 @@ public class BallView extends View implements SensorEventListener {
         else {
             discX += dxDisc;
         }
-        discY += dyDisc;
 
         // Check if the ball hits the edges of the view
         if (x > getWidth() - 25 || x < 25) {
@@ -80,10 +97,24 @@ public class BallView extends View implements SensorEventListener {
             dy = -dy;
         }
 
+        if (x + 50f >= discX && x - 50f <= discX + discWidth
+                && y + 50 >= discY && y - 50 <= discY + discHeight) {
+            // Reverse the ball's direction
+            dy = -dy;
+        }
+
+        // Check for collision with walls
+        if (x - 50f < 0 || x + 50f > getWidth()) {
+            // Reverse the ball's direction
+            dx = -dx;
+        }
+
         // Draw the ball at the updated position
         canvas.drawCircle(x, y, 25f, paint);
+        canvas.drawText(String.valueOf(rotationZ - rocketAngle), 20, 30, paint);
+        canvas.rotate(rocketAngle-rotationZ, centerX, centerY);
         canvas.drawRect(discX, discY, discX + discWidth, discHeight + discY, paint);
-
+        paint.setTextSize(30);
 
         // Redraw the view on the next frame
         invalidate();
@@ -93,6 +124,8 @@ public class BallView extends View implements SensorEventListener {
     protected void onAttachedToWindow() {
         super.onAttachedToWindow();
         mSensorManager.registerListener(this, mAccelerometer, SensorManager.SENSOR_DELAY_GAME);
+        mSensorManager.registerListener(this, mGyro , SensorManager.SENSOR_DELAY_GAME);
+
     }
 
     @Override
@@ -128,6 +161,13 @@ public class BallView extends View implements SensorEventListener {
                 else {
                     dxDisc = 0;
                 }
+            }
+            if (event.sensor.getType() == Sensor.TYPE_GAME_ROTATION_VECTOR) {
+                float[] rotationMatrix = new float[9];
+                SensorManager.getRotationMatrixFromVector(rotationMatrix, event.values);
+                float[] orientation = new float[3];
+                SensorManager.getOrientation(rotationMatrix, orientation);
+                rotationZ = (float) Math.toDegrees(orientation[0]) ;
             }
 
 
