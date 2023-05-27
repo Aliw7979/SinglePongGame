@@ -25,6 +25,7 @@ public class BallView extends View implements  SensorEventListener, OnTouchListe
     private float[] linearAcceleration = new float[3];
     private SensorManager sensorManager;
     private Paint paint = new Paint();
+    private float score = 0;
     private float x ;// X coordinate of the ball
     private float y ; // Y coordinate of the ball
     private float dx ;
@@ -115,6 +116,7 @@ public class BallView extends View implements  SensorEventListener, OnTouchListe
             // Reset the disc position if the user released the touch within the bounds of the disc
             if (touchingDisc && touchX >= discX - 15 && touchX <= discX + discWidth + 15
                     && touchY >= discY - 15 && touchY <= discY + discHeight + 15) {
+                score = 0;
                 x = -10f; // X coordinate of the ball
                 y = -10f; // Y coordinate of the ball
                 dx = 0f; // Change in X coordinate per frame
@@ -172,7 +174,7 @@ public class BallView extends View implements  SensorEventListener, OnTouchListe
 
         dy += aBall/200;
 
-        float radian = ( float) Math.toRadians(rocketAngle - rotationZ);
+        float radian = ( float) Math.toRadians(-rocketAngle + rotationZ);
         float discX1 = centerX - (((float) Math.cos(radian)) * discWidth/2);
         float discX2 = centerX + (((float) Math.cos(radian)) * discWidth/2);
         float discY1 = centerY - (((float) Math.sin(radian)) * discWidth/2);
@@ -184,6 +186,7 @@ public class BallView extends View implements  SensorEventListener, OnTouchListe
                 dy += (float) Math.cos(radian) * (yAcceleration);
             dx += (float) Math.sin(radian) * (yAcceleration);
             zAcceleration = yAcceleration;
+            score += 1;
         }
 
         // Check for collision with walls
@@ -193,10 +196,11 @@ public class BallView extends View implements  SensorEventListener, OnTouchListe
         }
 
         canvas.drawCircle(x, y, radius , paint);
-        canvas.drawText(String.valueOf(rotationZ - rocketAngle), 20, 30, paint);
-        canvas.drawText(String.valueOf(xAcceleration), 20, 70, paint);
-        canvas.drawText(String.valueOf((rotationZ)), 20, 110, paint);
-        canvas.drawText(String.valueOf((zAcceleration)), 20, 150, paint);
+        canvas.drawText("Angle: " +String.valueOf(rotationZ - rocketAngle), 20, 30, paint);
+        canvas.drawText("rAngle: " + String.valueOf((rotationZ)), 20, 70, paint);
+        canvas.drawText("xacc: " + String.valueOf(xAcceleration), 20, 110, paint);
+        canvas.drawText("zacc: "+ String.valueOf((zAcceleration)), 20, 150, paint);
+        canvas.drawText(String.valueOf((score)), 510, 150, paint);
         if(discX + dxDisc > getWidth() - 1 || discX + dxDisc < -discWidth)
         {
             centerX += 0;
@@ -206,7 +210,7 @@ public class BallView extends View implements  SensorEventListener, OnTouchListe
             centerX += dxDisc;
             discX += dxDisc;
         }
-        canvas.rotate(rocketAngle-rotationZ, centerX, centerY);
+        canvas.rotate(-rocketAngle+rotationZ, centerX, centerY);
         canvas.drawRect(discX, discY,discX + discWidth , discHeight + discY, paint);
         paint.setTextSize(30);
 
@@ -229,10 +233,10 @@ public class BallView extends View implements  SensorEventListener, OnTouchListe
 
             if(-xAcceleration > 0 && -xAcceleration > 2)
             {
-                dxDisc = 5;
+                dxDisc = 15;
             }
             else if (-xAcceleration < 0 && -xAcceleration < -2){
-               dxDisc = -5;
+               dxDisc = -15;
             }
             else {
                 dxDisc = 0;
