@@ -1,18 +1,17 @@
 package com.example.singleplayerponggame;
 
-import static java.sql.Types.NULL;
 
 import android.content.Context;
 import android.graphics.Canvas;
 import android.graphics.Color;
 import android.graphics.Paint;
-import android.graphics.Rect;
+
 import android.graphics.RectF;
 import android.hardware.Sensor;
 import android.hardware.SensorEvent;
 import android.hardware.SensorEventListener;
 import android.hardware.SensorManager;
-import android.text.method.Touch;
+
 import android.util.AttributeSet;
 import android.view.MotionEvent;
 import android.view.View;
@@ -20,41 +19,44 @@ import android.widget.TextView;
 import android.view.View.OnTouchListener;
 
 public class BallView extends View implements  SensorEventListener, OnTouchListener {
-
+    private float distance;
     private boolean touchingDisc;
     private float[] gravity = new float[3];
     private float[] linearAcceleration = new float[3];
     private SensorManager sensorManager;
-    private RectF raacket;
     private Paint paint = new Paint();
     private float x ;// X coordinate of the ball
     private float y ; // Y coordinate of the ball
-    private float dx ; // Change in X coordinate per frame
+    private float dx ;
+    private long lastCallTime = 0;
+    private  float aBall = 10;
+    // Change in X coordinate per frame
     private float dy ; // Change in Y coordinate per frame
     private float discX ;
+    private float radius = 20f;
     private float discY ;
     private float discWidth ;
     private float discHeight ;
-    private float currentYaw ; // Current angle around the z-axis (yaw)
-
     private  float dxDisc;
     private TextView textView;
     private float centerX,centerY;
     private  float rotationZ;
     private float rocketAngle;
     private float xAcceleration;
+    private float zAcceleration;
+    private float yAcceleration;
     private Canvas canvas;
     public BallView(Context context, AttributeSet attrs) {
         super(context, attrs);
         x = -10f; // X coordinate of the ball
         y = -10f; // Y coordinate of the ball
-        dx = 10f; // Change in X coordinate per frame
-        dy = 30f; // Change in Y coordinate per frame
+        dx = 0f; // Change in X coordinate per frame
+        dy = 0f; // Change in Y coordinate per frame
         discX = -10f;
         discY = -10f;
         discWidth = -10f;
         discHeight = 15f;
-        currentYaw = 0f; // Current angle around the z-axis (yaw)
+
         dxDisc = 0;
         // Get an instance of the SensorManager system service
         sensorManager = (SensorManager) context.getSystemService(Context.SENSOR_SERVICE);
@@ -63,6 +65,36 @@ public class BallView extends View implements  SensorEventListener, OnTouchListe
 
     }
 
+    public boolean checkLineCircleCollision(double lineStartX, double lineStartY, double lineEndX, double lineEndY,
+                                            double circleX, double circleY, double radius) {
+        double dx = lineEndX - lineStartX;
+        double dy = lineEndY - lineStartY;
+        double lineLength = Math.sqrt(dx * dx + dy * dy);
+        double unitDx = dx / lineLength;
+        double unitDy = dy/ lineLength;
+
+        double cx = circleX - lineStartX;
+        double cy = circleY - lineStartY;
+
+        double projection = cx * unitDx + cy * unitDy;
+
+        double closestPointX, closestPointY;
+
+        if (projection < 0) {
+            closestPointX = lineStartX;
+            closestPointY = lineStartY;
+        } else if (projection > lineLength) {
+            closestPointX = lineEndX;
+            closestPointY = lineEndY;
+        } else {
+            closestPointX = lineStartX + projection * unitDx;
+            closestPointY = lineStartY + projection * unitDy;
+        }
+
+        distance = (float) Math.sqrt(Math.pow(closestPointX - circleX, 2) + Math.pow(closestPointY - circleY, 2));
+
+        return distance <= radius;
+    }
     @Override
     public boolean onTouch(View v, MotionEvent event) {
         float touchX = event.getX();
@@ -85,13 +117,12 @@ public class BallView extends View implements  SensorEventListener, OnTouchListe
                     && touchY >= discY - 15 && touchY <= discY + discHeight + 15) {
                 x = -10f; // X coordinate of the ball
                 y = -10f; // Y coordinate of the ball
-                dx = 10f; // Change in X coordinate per frame
-                dy = 30f; // Change in Y coordinate per frame
+                dx = 0f; // Change in X coordinate per frame
+                dy = 0f; // Change in Y coordinate per frame
                 discX = -10f;
                 discY = -10f;
                 discWidth = -10f;
                 discHeight = 15f;
-                currentYaw = 0f; // Current angle around the z-axis (yaw)
                 dxDisc = 0;
             }
             // Resetthe flag indicating that the user is touching the disc
@@ -125,8 +156,6 @@ public class BallView extends View implements  SensorEventListener, OnTouchListe
 
         // Set the background color to white
         canvas.drawColor(Color.WHITE);
-
-        // Set the paint color to white
         paint.setColor(Color.BLACK);
 
         // Update the ball position
@@ -134,29 +163,38 @@ public class BallView extends View implements  SensorEventListener, OnTouchListe
         y += dy;
 
         // Check if the ball hits the edges of the view
-        if (x > getWidth() - 25 || x < 25) {
+        if (x > getWidth() - radius || x < radius) {
             dx = -dx;
         }
-        if (y > getHeight() - 25 || y < 25) {
-            dy = -dy;
-        }
-        if (x + 50f >= discX && x - 50f <= discX + discWidth
-                && y + 50 >= discY && y - 50 <= discY + discHeight) {
-            // Reverse the ball's direction
+        if (y > getHeight() - radius || y < radius) {
             dy = -dy;
         }
 
-        // Check for collision with walls
-        if (x - 50f < 0 || x + 50f > getWidth()) {
-            // Reverse the ball's direction
-            dx = -dx;
+        dy += aBall/200;
+
+        float radian = ( float) Math.toRadians(rocketAngle - rotationZ);
+        float discX1 = centerX - (((float) Math.cos(radian)) * discWidth/2);
+        float discX2 = centerX + (((float) Math.cos(radian)) * discWidth/2);
+        float discY1 = centerY - (((float) Math.sin(radian)) * discWidth/2);
+        float discY2 = centerY + (((float) Math.sin(radian)) * discWidth/2);
+        if (checkLineCircleCollision(discX2,discY2,discX1,discY1,x,y,radius)) {
+            dy = - (float) Math.cos(radian) * dy + (float) Math.sin(radian) * dx;
+            dx =   (float) Math.cos(radian) * dx - (float) Math.sin(radian) * dy;
+            dy += yAcceleration;
+            zAcceleration = yAcceleration;
         }
-        // Get the current yaw angle (in degrees) around the z-axis from the gyroscope sensor
-        //textView.setText((String.valueOf(currentYawDegrees)));
-        // Draw the ball at the updated position
-        canvas.drawCircle(x, y, 50f , paint);
+
+        // Check for collision with walls
+        if (x - radius < 0 || x + radius > getWidth()) {
+            canvas.drawText(String.valueOf((x - radius)), 20, 150, paint);
+            //dx = -dx;
+        }
+
+        canvas.drawCircle(x, y, radius , paint);
         canvas.drawText(String.valueOf(rotationZ - rocketAngle), 20, 30, paint);
         canvas.drawText(String.valueOf(xAcceleration), 20, 70, paint);
+        canvas.drawText(String.valueOf((rotationZ)), 20, 110, paint);
+        canvas.drawText(String.valueOf((zAcceleration)), 20, 150, paint);
         if(discX + dxDisc > getWidth() - 1 || discX + dxDisc < -discWidth)
         {
             centerX += 0;
@@ -170,12 +208,7 @@ public class BallView extends View implements  SensorEventListener, OnTouchListe
         canvas.drawRect(discX, discY,discX + discWidth , discHeight + discY, paint);
         paint.setTextSize(30);
 
-        // Write the text on the canvas
-        String text = "Hello, world!";
-        float x = 100;
-        float y = 100;
 
-        // Redraw the view on the next frame
         invalidate();
     }
 
@@ -188,25 +221,27 @@ public class BallView extends View implements  SensorEventListener, OnTouchListe
             gravity[1] = 1f * gravity[1] + (1 - 1f) * event.values[1];
             gravity[2] = 1f * gravity[2] + (1 - 1f) * event.values[2];
 
-            linearAcceleration[0] = event.values[0] - gravity[0];
+            linearAcceleration[0] = event.values[0];
             linearAcceleration[1] = event.values[1] - gravity[1];
-            linearAcceleration[2] = event.values[2] - gravity[2];
+            linearAcceleration[2] = event.values[2];
 
-            // Use the filtered linear acceleration values to move the ball
-            // For example:
+
             xAcceleration = linearAcceleration[0];
-//                float yAcceleration = linearAcceleration[1];
+            yAcceleration = linearAcceleration[2];
+
             if(-xAcceleration > 0 && -xAcceleration > 2)
             {
-                dxDisc = 35;
+                dxDisc = 5;
             }
             else if (-xAcceleration < 0 && -xAcceleration < -2){
-                dxDisc = -35;
+               dxDisc = -5;
             }
             else {
                 dxDisc = 0;
             }
         }
+
+
         if (event.sensor.getType() == Sensor.TYPE_GAME_ROTATION_VECTOR) {
             float[] rotationMatrix = new float[9];
             SensorManager.getRotationMatrixFromVector(rotationMatrix, event.values);
@@ -226,7 +261,7 @@ public class BallView extends View implements  SensorEventListener, OnTouchListe
 
     public void start() {
         // Register the SensorEventListener with the SensorManager to start receiving gyroscope sensor events
-        sensorManager.registerListener(this,sensorManager.getDefaultSensor(Sensor.TYPE_LINEAR_ACCELERATION),sensorManager.SENSOR_DELAY_UI);
+        sensorManager.registerListener(this,sensorManager.getDefaultSensor(Sensor.TYPE_LINEAR_ACCELERATION),sensorManager.SENSOR_DELAY_GAME);
         sensorManager.registerListener(this, sensorManager.getDefaultSensor(Sensor.TYPE_GAME_ROTATION_VECTOR), SensorManager.SENSOR_DELAY_GAME);
     }
 
