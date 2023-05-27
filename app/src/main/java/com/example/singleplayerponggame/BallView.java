@@ -233,10 +233,10 @@ public class BallView extends View implements  SensorEventListener, OnTouchListe
 
             if(-xAcceleration > 0 && -xAcceleration > 2)
             {
-                dxDisc = 5;
+                dxDisc = 15;
             }
             else if (-xAcceleration < 0 && -xAcceleration < -2){
-               dxDisc = -5;
+               dxDisc = -15;
             }
             else {
                 dxDisc = 0;
