@@ -180,7 +180,9 @@ public class BallView extends View implements  SensorEventListener, OnTouchListe
         if (checkLineCircleCollision(discX2,discY2,discX1,discY1,x,y,radius)) {
             dy = - (float) Math.cos(radian) * dy + (float) Math.sin(radian) * dx;
             dx =   (float) Math.cos(radian) * dx - (float) Math.sin(radian) * dy;
-            dy += yAcceleration;
+            if (!(dy < (float) Math.cos(radian) * (yAcceleration)) )
+                dy += (float) Math.cos(radian) * (yAcceleration);
+            dx += (float) Math.sin(radian) * (yAcceleration);
             zAcceleration = yAcceleration;
         }
 
@@ -216,13 +218,9 @@ public class BallView extends View implements  SensorEventListener, OnTouchListe
     @Override
     public void onSensorChanged(SensorEvent event) {
         if (event.sensor.getType() ==  Sensor.TYPE_LINEAR_ACCELERATION) {
-            // Apply high-pass filter to remove gravity component
-            gravity[0] = 1f * gravity[0] + (1 - 1f) * event.values[0];
-            gravity[1] = 1f * gravity[1] + (1 - 1f) * event.values[1];
-            gravity[2] = 1f * gravity[2] + (1 - 1f) * event.values[2];
 
             linearAcceleration[0] = event.values[0];
-            linearAcceleration[1] = event.values[1] - gravity[1];
+            linearAcceleration[1] = event.values[1];
             linearAcceleration[2] = event.values[2];
 
 
