@@ -174,7 +174,7 @@ public class BallView extends View implements  SensorEventListener, OnTouchListe
 
         dy += aBall/200;
 
-        float radian = ( float) Math.toRadians(rocketAngle - rotationZ);
+        float radian = ( float) Math.toRadians(-rocketAngle + rotationZ);
         float discX1 = centerX - (((float) Math.cos(radian)) * discWidth/2);
         float discX2 = centerX + (((float) Math.cos(radian)) * discWidth/2);
         float discY1 = centerY - (((float) Math.sin(radian)) * discWidth/2);
@@ -210,7 +210,7 @@ public class BallView extends View implements  SensorEventListener, OnTouchListe
             centerX += dxDisc;
             discX += dxDisc;
         }
-        canvas.rotate(rocketAngle-rotationZ, centerX, centerY);
+        canvas.rotate(-rocketAngle+rotationZ, centerX, centerY);
         canvas.drawRect(discX, discY,discX + discWidth , discHeight + discY, paint);
         paint.setTextSize(30);
 
