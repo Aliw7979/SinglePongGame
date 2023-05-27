@@ -1,17 +1,13 @@
 package com.example.singleplayerponggame;
 
-
 import android.content.Context;
 import android.graphics.Canvas;
 import android.graphics.Color;
 import android.graphics.Paint;
-
-import android.graphics.RectF;
 import android.hardware.Sensor;
 import android.hardware.SensorEvent;
 import android.hardware.SensorEventListener;
 import android.hardware.SensorManager;
-
 import android.util.AttributeSet;
 import android.view.MotionEvent;
 import android.view.View;
@@ -21,8 +17,8 @@ import android.view.View.OnTouchListener;
 public class BallView extends View implements  SensorEventListener, OnTouchListener {
     private float distance;
     private boolean touchingDisc;
-    private float[] gravity = new float[3];
     private float[] linearAcceleration = new float[3];
+    private float[] gravity = new float[3];
     private SensorManager sensorManager;
     private Paint paint = new Paint();
     private float score = 0;
@@ -222,10 +218,15 @@ public class BallView extends View implements  SensorEventListener, OnTouchListe
     @Override
     public void onSensorChanged(SensorEvent event) {
         if (event.sensor.getType() ==  Sensor.TYPE_LINEAR_ACCELERATION) {
+            final float alpha = 0.8f;
 
-            linearAcceleration[0] = event.values[0];
-            linearAcceleration[1] = event.values[1];
-            linearAcceleration[2] = event.values[2];
+            gravity[0] = alpha * gravity[0] + (1 - alpha) * event.values[0];
+            gravity[1] = alpha * gravity[1] + (1 - alpha) * event.values[1];
+            gravity[2] = alpha * gravity[2] + (1 - alpha) * event.values[2];
+
+            linearAcceleration[0] = event.values[0] - gravity[0];
+            linearAcceleration[1] = event.values[1] - gravity[1];
+            linearAcceleration[2] = event.values[2] - gravity[2];
 
 
             xAcceleration = linearAcceleration[0];
