@@ -12,41 +12,93 @@ import android.hardware.Sensor;
 import android.hardware.SensorEvent;
 import android.hardware.SensorEventListener;
 import android.hardware.SensorManager;
+import android.text.method.Touch;
 import android.util.AttributeSet;
+import android.view.MotionEvent;
 import android.view.View;
 import android.widget.TextView;
+import android.view.View.OnTouchListener;
 
-public class BallView extends View implements  SensorEventListener {
+public class BallView extends View implements  SensorEventListener, OnTouchListener {
 
+    private boolean touchingDisc;
     private float[] gravity = new float[3];
     private float[] linearAcceleration = new float[3];
     private SensorManager sensorManager;
     private RectF raacket;
     private Paint paint = new Paint();
-    private float x = -10f; // X coordinate of the ball
-    private float y = -10f; // Y coordinate of the ball
-    private float dx = 10f; // Change in X coordinate per frame
-    private float dy = 30f; // Change in Y coordinate per frame
-    private float discX = -10f;
-    private float discY = -10f;
-    private float discWidth = -10f;
-    private float discHeight = 15f;
-    private float currentYaw = 0f; // Current angle around the z-axis (yaw)
+    private float x ;// X coordinate of the ball
+    private float y ; // Y coordinate of the ball
+    private float dx ; // Change in X coordinate per frame
+    private float dy ; // Change in Y coordinate per frame
+    private float discX ;
+    private float discY ;
+    private float discWidth ;
+    private float discHeight ;
+    private float currentYaw ; // Current angle around the z-axis (yaw)
 
-    private  float dxDisc = 0;
+    private  float dxDisc;
     private TextView textView;
     private float centerX,centerY;
     private  float rotationZ;
     private float rocketAngle;
     private float xAcceleration;
+    private Canvas canvas;
     public BallView(Context context, AttributeSet attrs) {
         super(context, attrs);
-
+        x = -10f; // X coordinate of the ball
+        y = -10f; // Y coordinate of the ball
+        dx = 10f; // Change in X coordinate per frame
+        dy = 30f; // Change in Y coordinate per frame
+        discX = -10f;
+        discY = -10f;
+        discWidth = -10f;
+        discHeight = 15f;
+        currentYaw = 0f; // Current angle around the z-axis (yaw)
+        dxDisc = 0;
         // Get an instance of the SensorManager system service
         sensorManager = (SensorManager) context.getSystemService(Context.SENSOR_SERVICE);
+        setOnTouchListener(this);
 
-        // Get an instance of the gyroscope sensor
 
+    }
+
+    @Override
+    public boolean onTouch(View v, MotionEvent event) {
+        float touchX = event.getX();
+        float touchY = event.getY();
+
+
+        if (event.getAction() == MotionEvent.ACTION_DOWN) {
+            // Check if the touch event occurred within the bounds of the disc
+
+                // Set the flag indicating that the user is touching the disc
+                touchingDisc = true;
+
+
+            // Save the default position of the disc
+
+
+        } else if (event.getAction() == MotionEvent.ACTION_UP) {
+            // Reset the disc position if the user released the touch within the bounds of the disc
+            if (touchingDisc && touchX >= discX - 15 && touchX <= discX + discWidth + 15
+                    && touchY >= discY - 15 && touchY <= discY + discHeight + 15) {
+                x = -10f; // X coordinate of the ball
+                y = -10f; // Y coordinate of the ball
+                dx = 10f; // Change in X coordinate per frame
+                dy = 30f; // Change in Y coordinate per frame
+                discX = -10f;
+                discY = -10f;
+                discWidth = -10f;
+                discHeight = 15f;
+                currentYaw = 0f; // Current angle around the z-axis (yaw)
+                dxDisc = 0;
+            }
+            // Resetthe flag indicating that the user is touching the disc
+            touchingDisc = false;
+        }
+
+        return true;
     }
 
     @Override
@@ -130,7 +182,7 @@ public class BallView extends View implements  SensorEventListener {
 
     @Override
     public void onSensorChanged(SensorEvent event) {
-        if (event.sensor.getType() != NULL) {
+        if (event.sensor.getType() ==  Sensor.TYPE_LINEAR_ACCELERATION) {
             // Apply high-pass filter to remove gravity component
             gravity[0] = 1f * gravity[0] + (1 - 1f) * event.values[0];
             gravity[1] = 1f * gravity[1] + (1 - 1f) * event.values[1];
@@ -162,7 +214,10 @@ public class BallView extends View implements  SensorEventListener {
             SensorManager.getOrientation(rotationMatrix, orientation);
             rotationZ = (float) Math.toDegrees(orientation[0]) ;
         }
+
+
     }
+
 
     @Override
     public void onAccuracyChanged(Sensor sensor, int accuracy) {
@@ -171,7 +226,7 @@ public class BallView extends View implements  SensorEventListener {
 
     public void start() {
         // Register the SensorEventListener with the SensorManager to start receiving gyroscope sensor events
-        sensorManager.registerListener(this,sensorManager.getDefaultSensor(Sensor.TYPE_ACCELEROMETER),sensorManager.SENSOR_DELAY_UI);
+        sensorManager.registerListener(this,sensorManager.getDefaultSensor(Sensor.TYPE_LINEAR_ACCELERATION),sensorManager.SENSOR_DELAY_UI);
         sensorManager.registerListener(this, sensorManager.getDefaultSensor(Sensor.TYPE_GAME_ROTATION_VECTOR), SensorManager.SENSOR_DELAY_GAME);
     }
 
@@ -181,3 +236,4 @@ public class BallView extends View implements  SensorEventListener {
         sensorManager.unregisterListener(this);
     }
 }
+
