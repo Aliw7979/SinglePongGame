@@ -179,7 +179,7 @@ public class BallView extends View implements  SensorEventListener, OnTouchListe
             dy = - (float) Math.cos(radian) * dy + (float) Math.sin(radian) * dx;
             dx =   (float) Math.cos(radian) * dx - (float) Math.sin(radian) * dy;
             if (!(dy < (float) Math.cos(radian) * (yAcceleration)) )
-                dy += (float) Math.cos(radian) * (yAcceleration);
+                dy += ((float) Math.cos(radian) * (yAcceleration));
             dx += (float) Math.sin(radian) * (yAcceleration);
             zAcceleration = yAcceleration;
             score += 1;
